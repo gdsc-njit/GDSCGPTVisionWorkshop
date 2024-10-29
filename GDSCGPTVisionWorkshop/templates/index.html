@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Classifier</title>
+</head>
+<style>
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 2rem;
+}
+
+.upload-container {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.file-input-wrapper {
+    margin-bottom: 1rem;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+.custom-file-upload {
+    border: 2px dashed #3498db;
+    border-radius: 5px;
+    padding: 1rem 2rem;
+    cursor: pointer;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.custom-file-upload:hover {
+    background-color: #f7f9fc;
+    border-color: #2980b9;
+}
+
+.submit-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+.submit-btn:hover {
+    background-color: #2980b9;
+}
+
+.preview-container {
+    margin: 2rem 0;
+    text-align: center;
+}
+
+.preview-image {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.result-container {
+    margin-top: 2rem;
+    padding: 1rem;
+    border-radius: 5px;
+}
+
+.error {
+    color: #e74c3c;
+    background-color: #fde8e7;
+    padding: 1rem;
+    border-radius: 5px;
+}
+
+.success {
+    color: #2c3e50;
+    background-color: #f7f9fc;
+    padding: 1rem;
+    border-radius: 5px;
+}
+
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+<body>
+    <div class="container">
+        <h1>AI Image Classifier</h1>
+        <div class="upload-container">
+            <form id="uploadForm">
+                <div class="file-input-wrapper">
+                    <input type="file" id="imageUpload" name="image" accept="image/*" required>
+                    <label for="imageUpload" class="custom-file-upload">
+                        Choose Image
+                    </label>
+                </div>
+                <button type="submit" class="submit-btn">Classify Image</button>
+            </form>
+        </div>
+        <div id="preview" class="preview-container"></div>
+        <div id="result" class="result-container"></div>
+        <div id="loading" class="loading-spinner" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analyzing image...</p>
+        </div>
+    </div>
+
+    <script>
+// Get the file input, preview display, and loading spinner elements by their IDs
+const imageUpload = document.getElementById('imageUpload');  // File input for selecting an image
+const preview = document.getElementById('preview');  // Container for displaying image preview
+const loading = document.getElementById('loading');  // Loading spinner container
+
+// Event listener for when a user selects a file
+imageUpload.addEventListener('change', function(event) {
+    const file = event.target.files[0];  // Get the selected file
+    if (file) {
+        const reader = new FileReader();  // Create a FileReader object to read the file
+        // Function to execute once the file is read
+        reader.onload = function(e) {
+            // Display the preview image by setting it as the inner HTML of the preview container
+            preview.innerHTML = `<img src="${e.target.result}" alt="Preview" class="preview-image">`;
+        };
+        reader.readAsDataURL(file);  // Read the file as a Data URL to display it
+    }
+});
+
+// Event handler for the form submission when the user clicks the "Classify Image" button
+document.getElementById('uploadForm').onsubmit = async function(event) {
+    event.preventDefault();  // Prevent the default form submission behavior (page reload)
+    const image = imageUpload.files[0];  // Get the uploaded image file
+    if (!image) return;  // Exit if no image is uploaded
+
+    const formData = new FormData();  // Create a FormData object to send the image file
+    formData.append('image', image);  // Add the image file to the form data
+
+    loading.style.display = 'flex';  // Display the loading spinner while processing
+    document.getElementById('result').innerHTML = '';  // Clear any previous results
+
+    try {
+        // Send a POST request to the /classify endpoint with the image file
+        const response = await fetch('/classify', {
+            method: 'POST',
+            body: formData  // Attach the FormData containing the image
+        });
+        const result = await response.json();  // Parse the JSON response
+
+        // Check if there is an error in the response and display it
+        if (result.error) {
+            document.getElementById('result').innerHTML = `<div class="error">${result.error}</div>`;
+        } else {
+            // Display the classification result if successful
+            document.getElementById('result').innerHTML = `<div class="success">${result.classification}</div>`;
+        }
+    } catch (error) {
+        // Display an error message if the fetch request fails
+        document.getElementById('result').innerHTML = `<div class="error">An error occurred: ${error.message}</div>`;
+    } finally {
+        // Hide the loading spinner after the request is completed
+        loading.style.display = 'none';
+    }
+};
+
+    </script>
+</body>
+</html>
