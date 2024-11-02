@@ -1,13 +1,15 @@
 from flask import Flask, render_template, request, jsonify  # Import necessary modules from Flask
 import base64  # Module to handle base64 encoding for images
 from openai import OpenAI  # Import OpenAI library to interact with GPT-4 API
-
+import openai
+from dotenv import load_dotenv
+import os
 # Initialize the Flask app
 app = Flask(__name__)
 
 # Your OpenAI API Key here (Replace with your actual API Key)
-API_KEY = 'API_KEY'
 client = OpenAI()  # Instantiate OpenAI client
+API_KEY = os.getenv('APIKEY')
 
 # Function to encode an uploaded image as a base64 string
 def encode_image(image):
