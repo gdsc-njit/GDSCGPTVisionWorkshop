@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import os
 # Initialize the Flask app
 app = Flask(__name__)
-
+load_dotenv();
 # Your OpenAI API Key here (Replace with your actual API Key)
 client = OpenAI()  # Instantiate OpenAI client
 API_KEY = os.getenv('APIKEY')
